@@ -6,13 +6,52 @@ local luatables = {}
 if not table.unpack and unpack then
   table.unpack = unpack
 end
+
+local BORDERS = {
+  single = {
+    top_left = "┌",
+    top_right = "┐",
+    bottom_left = "└",
+    bottom_right = "┘",
+    inner_intersection = "┼",
+    outer_left_intersecrtion = "├",
+    outer_right_intersecrtion = "┤",
+    outer_top_intersecrtion = "┬",
+    outer_bottom_intersecrtion = "┴",
+    vertical = "│",
+    horizontal = "─",
+  },
+}
+
+---@enum BorderType
+local BorderType = {
+  None = "none",
+  Single = "single",
+  Double = "double",
+  Fat = "fat",
+}
+
+luatables.BorderType = BorderType
+
 ---@class Table
-local Table = {}
+local Table = {
+  _nil = "",
+  _border = BorderType.Single,
+  _row_separator = false,
+  _column_separator = false,
+  _header_separator = false,
+}
 
 ---create a new table
 ---@return Table
 function Table:new()
-  local o = {}
+  local o = {
+    _nil = Table._nil,
+    _border = Table._border,
+    _row_separator = Table._row_separator,
+    _column_separator = Table._column_separator,
+    _header_separator = Table._header_separator,
+  }
   setmetatable(o, self)
   self.__index = self
   return o
@@ -64,7 +103,11 @@ function Table:format_str()
   for _, width in ipairs(widths) do
     formats[#formats + 1] = string.format("%%-%ds", width)
   end
-  return table.concat(formats, " ║ ")
+  local col_separator = "   "
+  if self._column_separator then
+    col_separator = " " .. BORDERS[self._border].vertical .. " "
+  end
+  return table.concat(formats, col_separator)
 end
 
 ---@private
@@ -95,18 +138,70 @@ function Table:row_length()
   return max
 end
 
-function Table:render()
-  local res = {}
-  local format_str = self:format_str()
-  self:replace_nil()
-  res[#res + 1] = text
-    :new(string.format(format_str, table.unpack(self._headers)))
-    :bg(text.Color.White)
-    :fg(text.Color.Black)
-    :bold()
-    :render()
+---@private
+function Table:render_row_separator()
+  if self._row_separator == BorderType.None then
+    return nil
+  end
+  local row_separator = BORDERS[self._border].horizontal
+  local intersection = string.rep(row_separator, 3)
+  if self._column_separator then
+    intersection = row_separator .. BORDERS[self._border].inner_intersection .. row_separator
+  end
+  local widths = self:column_widths()
+  local cols = {}
+  for _, width in ipairs(widths) do
+    cols[#cols + 1] = string.rep(row_separator, width)
+  end
+  return table.concat(cols, intersection)
+end
+
+---@private
+function Table:render_rows()
+  local fmt = self:format_str()
+  local rows = {}
   for _, row in ipairs(self._data) do
-    res[#res + 1] = string.format(format_str, table.unpack(row))
+    rows[#rows + 1] = string.format(fmt, table.unpack(row))
+  end
+  return rows
+end
+
+---@private
+function Table:render_header_separator()
+  local row_separator = BORDERS[self._border].horizontal
+  local intersection = string.rep(row_separator, 3)
+  if self._column_separator then
+    intersection = row_separator .. BORDERS[self._border].inner_intersection .. row_separator
+  end
+  local widths = self:column_widths()
+  local cols = {}
+  for _, width in ipairs(widths) do
+    cols[#cols + 1] = string.rep(row_separator, width)
+  end
+  return table.concat(cols, intersection)
+end
+
+---@private
+function Table:render_header()
+  local fmt = self:format_str()
+  local res = {
+    string.format(fmt, table.unpack(self._headers)),
+  }
+  if self._header_separator then
+    res[#res + 1] = self:render_header_separator()
+  end
+  return res
+end
+
+function Table:render()
+  local res = self:render_header()
+  local rows = self:render_rows()
+  local row_sep = self:render_row_separator()
+  for idx, row in ipairs(rows) do
+    res[#res + 1] = row
+    if self._row_separator and idx ~= #rows then
+      res[#res + 1] = row_sep
+    end
   end
   return table.concat(res, "\n")
 end
