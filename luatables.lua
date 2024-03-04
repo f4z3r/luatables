@@ -14,12 +14,38 @@ local BORDERS = {
     bottom_left = "└",
     bottom_right = "┘",
     inner_intersection = "┼",
-    outer_left_intersecrtion = "├",
-    outer_right_intersecrtion = "┤",
-    outer_top_intersecrtion = "┬",
-    outer_bottom_intersecrtion = "┴",
+    outer_left_intersection = "├",
+    outer_right_intersection = "┤",
+    outer_top_intersection = "┬",
+    outer_bottom_intersection = "┴",
     vertical = "│",
     horizontal = "─",
+  },
+  double = {
+    top_left = "╔",
+    top_right = "╗",
+    bottom_left = "╚",
+    bottom_right = "╝",
+    inner_intersection = "╬",
+    outer_left_intersection = "╠",
+    outer_right_intersection = "╣",
+    outer_top_intersection = "╦",
+    outer_bottom_intersection = "╩",
+    vertical = "║",
+    horizontal = "═",
+  },
+  fat = {
+    top_left = "┏",
+    top_right = "┓",
+    bottom_left = "┗",
+    bottom_right = "┛",
+    inner_intersection = "╋",
+    outer_left_intersection = "┣",
+    outer_right_intersection = "┫",
+    outer_top_intersection = "┳",
+    outer_bottom_intersection = "┻",
+    vertical = "┃",
+    horizontal = "━",
   },
 }
 
@@ -36,17 +62,20 @@ luatables.BorderType = BorderType
 ---@class Table
 local Table = {
   _nil = "",
-  _border = BorderType.Single,
+  _border_type = BorderType.Single,
+  _border = false,
   _row_separator = false,
-  _column_separator = false,
-  _header_separator = false,
+  _column_separator = true,
+  _header_separator = true,
 }
 
 ---create a new table
 ---@return Table
 function Table:new()
   local o = {
+    _data = {},
     _nil = Table._nil,
+    _border_type = Table._border_type,
     _border = Table._border,
     _row_separator = Table._row_separator,
     _column_separator = Table._column_separator,
@@ -69,7 +98,6 @@ end
 ---@vararg any
 ---@return Table
 function Table:row(...)
-  self._data = self._data or {}
   self._data[#self._data + 1] = { ... }
   return self
 end
@@ -78,10 +106,69 @@ end
 ---@vararg any[]
 ---@return Table
 function Table:rows(...)
-  self._data = self._data or {}
   for _, row in ipairs({ ... }) do
     self:row(table.unpack(row))
   end
+  return self
+end
+
+---set the default string to replace nil values in the table
+---@param str string
+---@return Table
+function Table:null(str)
+  self._nil = str
+  return self
+end
+
+---set the border type of this table
+---@param type BorderType
+---@return Table
+function Table:border_type(type)
+  self._border_type = type
+  return self
+end
+
+---enable borders
+---@param enabled boolean?
+---@return Table
+function Table:border(enabled)
+  if enabled == nil then
+    enabled = true
+  end
+  self._border = enabled
+  return self
+end
+
+---enable row separators
+---@param enabled boolean?
+---@return Table
+function Table:row_separator(enabled)
+  if enabled == nil then
+    enabled = true
+  end
+  self._row_separator = enabled
+  return self
+end
+
+---enable column separators
+---@param enabled boolean?
+---@return Table
+function Table:column_separator(enabled)
+  if enabled == nil then
+    enabled = true
+  end
+  self._column_separator = enabled
+  return self
+end
+
+---enable header separators
+---@param enabled boolean?
+---@return Table
+function Table:header_separator(enabled)
+  if enabled == nil then
+    enabled = true
+  end
+  self._header_separator = enabled
   return self
 end
 
@@ -89,9 +176,9 @@ end
 function Table:replace_nil()
   local row_length = self:row_length()
   for idx = 1, row_length do
-    self._headers[idx] = self._headers[idx] or ""
+    self._headers[idx] = self._headers[idx] or self._nil
     for _, row in ipairs(self._data) do
-      row[idx] = row[idx] or ""
+      row[idx] = row[idx] or self._nil
     end
   end
 end
@@ -105,7 +192,7 @@ function Table:format_str()
   end
   local col_separator = "   "
   if self._column_separator then
-    col_separator = " " .. BORDERS[self._border].vertical .. " "
+    col_separator = " " .. BORDERS[self._border_type].vertical .. " "
   end
   return table.concat(formats, col_separator)
 end
@@ -143,10 +230,10 @@ function Table:render_row_separator()
   if self._row_separator == BorderType.None then
     return nil
   end
-  local row_separator = BORDERS[self._border].horizontal
+  local row_separator = BORDERS[self._border_type].horizontal
   local intersection = string.rep(row_separator, 3)
   if self._column_separator then
-    intersection = row_separator .. BORDERS[self._border].inner_intersection .. row_separator
+    intersection = row_separator .. BORDERS[self._border_type].inner_intersection .. row_separator
   end
   local widths = self:column_widths()
   local cols = {}
@@ -168,10 +255,10 @@ end
 
 ---@private
 function Table:render_header_separator()
-  local row_separator = BORDERS[self._border].horizontal
+  local row_separator = BORDERS[self._border_type].horizontal
   local intersection = string.rep(row_separator, 3)
   if self._column_separator then
-    intersection = row_separator .. BORDERS[self._border].inner_intersection .. row_separator
+    intersection = row_separator .. BORDERS[self._border_type].inner_intersection .. row_separator
   end
   local widths = self:column_widths()
   local cols = {}
@@ -194,6 +281,8 @@ function Table:render_header()
 end
 
 function Table:render()
+  -- work with copy of data to avoid modifying original data
+  self:replace_nil()
   local res = self:render_header()
   local rows = self:render_rows()
   local row_sep = self:render_row_separator()
