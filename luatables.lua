@@ -8,6 +8,11 @@ local Text = text.Text
 
 local luatables = {}
 
+---@class Nil
+local Nil = {}
+
+luatables.Nil = Nil
+
 -- compatibility
 if not table.unpack and unpack then
   table.unpack = unpack
@@ -83,6 +88,14 @@ local BorderType = {
 
 luatables.BorderType = BorderType
 
+---@enum Justify
+local Justify = {
+  Left = "-",
+  Right = "",
+}
+
+luatables.Justify = Justify
+
 ---format strings respecting utf8 characters
 ---@param fmt string the format string
 ---@param ... any
@@ -106,6 +119,14 @@ if _TEST then
   luatables.format = format
 end
 
+local function always_true()
+  return true
+end
+
+local function always_false()
+  return false
+end
+
 ---replace nil values in an array with a replacement
 ---@param data any[]
 ---@param repl any
@@ -113,7 +134,7 @@ end
 local function replace_nil(data, repl)
   local res = {}
   for _, val in ipairs(data) do
-    if val == nil then
+    if val == Nil then
       res[#res + 1] = repl
     else
       res[#res + 1] = val
@@ -122,16 +143,19 @@ local function replace_nil(data, repl)
   return res
 end
 
+---@alias FormatCallback fun(idx: number): boolean
+
 ---@class Table
 ---@field private _headers table?
 ---@field private _data table[]
 ---@field private _nil string
 ---@field private _border_type BorderType
 ---@field private _border boolean
----@field private _row_separator boolean
----@field private _column_separator boolean
+---@field private _row_separator FormatCallback
+---@field private _column_separator FormatCallback
 ---@field private _header_separator boolean
 ---@field private _padding number
+---@field private _justify Justify
 local Table = {}
 
 ---create a new table
@@ -143,10 +167,11 @@ function Table:new()
     _nil = "",
     _border_type = BorderType.Single,
     _border = true,
-    _row_separator = false,
-    _column_separator = true,
+    _row_separator = always_false,
+    _column_separator = always_true,
     _header_separator = true,
     _padding = 1,
+    _justify = Justify.Left,
   }
   setmetatable(o, self)
   self.__index = self
@@ -207,22 +232,32 @@ function Table:border(enabled)
 end
 
 ---enable row separators
----@param enabled boolean?
+---@param enabled FormatCallback|boolean?
 ---@return Table
 function Table:row_separator(enabled)
   if enabled == nil then
-    enabled = true
+    enabled = always_true
+  end
+  if type(enabled) ~= "function" then
+    enabled = function()
+      return enabled
+    end
   end
   self._row_separator = enabled
   return self
 end
 
 ---enable column separators
----@param enabled boolean?
+---@param enabled FormatCallback|boolean?
 ---@return Table
 function Table:column_separator(enabled)
   if enabled == nil then
-    enabled = true
+    enabled = always_true
+  end
+  if type(enabled) ~= "function" then
+    enabled = function()
+      return enabled
+    end
   end
   self._column_separator = enabled
   return self
@@ -275,7 +310,11 @@ end
 function Table:column_width(idx)
   local max = utf8.len(self._headers[idx] or "")
   for _, row in ipairs(self._data) do
-    max = math.max(max, utf8.len(tostring(row[idx]) or ""))
+    local data = row[idx]
+    if data == Nil then
+      data = self._nil
+    end
+    max = math.max(max, utf8.len(tostring(data) or ""))
   end
   return max
 end
@@ -302,24 +341,26 @@ end
 ---@private
 function Table:format_str()
   local padding = string.rep(" ", self._padding)
+  local widths = self:column_widths()
+  local res = ""
+  for idx, width in ipairs(widths) do
+    if idx ~= 1 then
+      local separator = " "
+      if self._column_separator(idx) and self._border_type ~= BorderType.None then
+        separator = BORDERS[self._border_type].vertical
+      end
+      res = res .. separator .. padding
+    end
+    res = res .. string.format("%%%s%ds", self._justify, width) .. padding
+  end
   local separator = " "
   if self._border_type ~= BorderType.None then
     separator = BORDERS[self._border_type].vertical
   end
-  local widths = self:column_widths()
-  local formats = {}
-  for _, width in ipairs(widths) do
-    formats[#formats + 1] = string.format("%%-%ds", width)
-  end
-  local col_separator = padding .. " " .. padding
-  if self._column_separator then
-    col_separator = padding .. separator .. padding
-  end
-  local fmt = table.concat(formats, col_separator)
   if self._border then
-    fmt = separator .. padding .. fmt .. padding .. separator
+    res = separator .. padding .. res .. separator
   end
-  return fmt
+  return res
 end
 
 ---@private
@@ -327,7 +368,7 @@ function Table:render_rows()
   local fmt = self:format_str()
   local rows = {}
   for _, row in ipairs(self._data) do
-    rows[#rows + 1] = format(fmt, table.unpack(row))
+    rows[#rows + 1] = format(fmt, table.unpack(replace_nil(row, self._nil)))
   end
   return rows
 end
@@ -346,20 +387,22 @@ function Table:render_separator(type)
   local borders = BORDERS[self._border_type]
   local separators = borders[type]
   local padding = string.rep(borders.horizontal, self._padding)
-  local intersection = padding .. borders.horizontal .. padding
-  if self._column_separator then
-    intersection = padding .. separators.center .. padding
-  end
   local widths = self:column_widths()
-  local cols = {}
-  for _, width in ipairs(widths) do
-    cols[#cols + 1] = string.rep(borders.horizontal, width)
+  local res = ""
+  for idx, width in ipairs(widths) do
+    if idx ~= 1 then
+      local separator = borders.horizontal
+      if self._column_separator(idx) and self._border_type ~= BorderType.None then
+        separator = separators.center
+      end
+      res = res .. separator .. padding
+    end
+    res = res .. string.rep(borders.horizontal, width) .. padding
   end
-  local fmt = table.concat(cols, intersection)
   if self._border then
-    fmt = separators.left .. padding .. fmt .. padding .. separators.right
+    res = separators.left .. padding .. res .. separators.right
   end
-  return fmt
+  return res
 end
 
 ---@private
@@ -390,10 +433,10 @@ function Table:render()
   local rows = self:render_rows()
   local row_sep = self:render_row_separator()
   for idx, row in ipairs(rows) do
-    res[#res + 1] = row
-    if self._row_separator and idx ~= #rows then
+    if self._row_separator(idx) and idx ~= 1 then
       res[#res + 1] = row_sep
     end
+    res[#res + 1] = row
   end
   if self._border then
     res[#res + 1] = self:render_bottom()
