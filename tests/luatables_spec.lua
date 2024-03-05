@@ -55,16 +55,19 @@ end
 context("Tables:", function()
   local headers = { "Item", "Count", "Price", "Currency" }
   local data = {
-    { "apple", 15, 7.5, "CHF" },
-    { "orange", 3, 5, "CHF" },
-    { "computer", 1, 1200, "USD" },
-    { "total", 19 },
+    { "apple",    15, 7.5,  "CHF" },
+    { "orange",   3,  5,    "CHF" },
+    { "computer", 1,  1200, "USD" },
+    { "total",    19 },
   }
 
-  local tbl = tables.Table:new():headers(table.unpack(headers)):rows(table.unpack(data))
+  local tbl
+  before_each(function()
+    tbl = tables.Table:new():headers(table.unpack(headers)):rows(table.unpack(data))
+  end)
 
-  describe("creating standard tables", function()
-    it("should format standard text correctly", function()
+  describe("when rendering standard tables, they", function()
+    it("should support formatting standard text correctly", function()
       local out = tbl:render()
       local expected = trim_indent(
         [[
@@ -74,7 +77,133 @@ context("Tables:", function()
          orange   │ 3     │ 5     │ CHF
          computer │ 1     │ 1200  │ USD
          total    │ 19    │       │
-      ]],
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support adding data", function()
+      tbl:row("other total", 18, 999, "USD")
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item        │ Count │ Price │ Currency
+        ─────────────┼───────┼───────┼──────────
+         apple       │ 15    │ 7.5   │ CHF
+         orange      │ 3     │ 5     │ CHF
+         computer    │ 1     │ 1200  │ USD
+         total       │ 19    │       │
+         other total │ 18    │ 999   │ USD
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support utf8 data", function()
+      tbl:row("óthẽr total", 18, 999, "USD")
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item        │ Count │ Price │ Currency
+        ─────────────┼───────┼───────┼──────────
+         apple       │ 15    │ 7.5   │ CHF
+         orange      │ 3     │ 5     │ CHF
+         computer    │ 1     │ 1200  │ USD
+         total       │ 19    │       │
+         óthẽr total │ 18    │ 999   │ USD
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support replacing nil data", function()
+      tbl:null("n/a")
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item     │ Count │ Price │ Currency
+        ──────────┼───────┼───────┼──────────
+         apple    │ 15    │ 7.5   │ CHF
+         orange   │ 3     │ 5     │ CHF
+         computer │ 1     │ 1200  │ USD
+         total    │ 19    │ n/a   │ n/a
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+  end)
+
+  describe("when changing borders of tables, they", function()
+    it("should support full borders", function()
+      tbl:border()
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+        ┌──────────┬───────┬───────┬──────────┐
+        │ Item     │ Count │ Price │ Currency │
+        ├──────────┼───────┼───────┼──────────┤
+        │ apple    │ 15    │ 7.5   │ CHF      │
+        │ orange   │ 3     │ 5     │ CHF      │
+        │ computer │ 1     │ 1200  │ USD      │
+        │ total    │ 19    │       │          │
+        └──────────┴───────┴───────┴──────────┘
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support side borders", function()
+      tbl:border(tables.BorderType.Sides)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+        │ Item     │ Count │ Price │ Currency │
+        ├──────────┼───────┼───────┼──────────┤
+        │ apple    │ 15    │ 7.5   │ CHF      │
+        │ orange   │ 3     │ 5     │ CHF      │
+        │ computer │ 1     │ 1200  │ USD      │
+        │ total    │ 19    │       │          │
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support top borders", function()
+      tbl:border(tables.BorderType.TopBottom)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+        ──────────┬───────┬───────┬──────────
+         Item     │ Count │ Price │ Currency
+        ──────────┼───────┼───────┼──────────
+         apple    │ 15    │ 7.5   │ CHF
+         orange   │ 3     │ 5     │ CHF
+         computer │ 1     │ 1200  │ USD
+         total    │ 19    │       │
+        ──────────┴───────┴───────┴──────────
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support removing header separators", function()
+      tbl:header_separator(false)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item     │ Count │ Price │ Currency
+         apple    │ 15    │ 7.5   │ CHF
+         orange   │ 3     │ 5     │ CHF
+         computer │ 1     │ 1200  │ USD
+         total    │ 19    │       │
+        ]],
         1
       )
       assert.are.equal(expected, trim_trailing_ws(out))

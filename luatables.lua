@@ -19,10 +19,6 @@ luatables.Color = text.Color
 ---@class Text
 luatables.Text = text.Text
 
-local function bool_to_int(val)
-  return val and 1 or 0
-end
-
 local BORDERS = {
   single = {
     top = {
@@ -137,7 +133,7 @@ local function always_false()
   return false
 end
 
-local function no_format_row(_, row)
+local function no_format_row(_, _, row)
   return row
 end
 
