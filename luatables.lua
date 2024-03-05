@@ -8,11 +8,6 @@ local Text = text.Text
 
 local luatables = {}
 
----@class Nil
-local Nil = {}
-
-luatables.Nil = Nil
-
 -- compatibility
 if not table.unpack and unpack then
   table.unpack = unpack
@@ -124,10 +119,6 @@ local function format(fmt, ...)
   end))
 end
 
-if _TEST then
-  luatables.format = format
-end
-
 local function always_true()
   return true
 end
@@ -152,10 +143,11 @@ end
 ---@param data any[]
 ---@param repl any
 ---@return any[]
-local function replace_nil(data, repl)
+local function replace_nil(data, repl, fill)
   local res = {}
-  for _, val in ipairs(data) do
-    if val == Nil then
+  for idx = 1, fill do
+    local val = data[idx]
+    if val == Nil or val == nil then
       res[#res + 1] = repl
     else
       res[#res + 1] = val
@@ -265,6 +257,7 @@ function Table:row_separator(enabled)
   elseif not enabled then
     enabled = always_false
   end
+  ---@cast enabled FilterCallback
   self._row_separator = enabled
   return self
 end
@@ -278,6 +271,7 @@ function Table:column_separator(enabled)
   elseif not enabled then
     enabled = always_false
   end
+  ---@cast enabled FilterCallback
   self._column_separator = enabled
   return self
 end
@@ -366,7 +360,7 @@ function Table:render_row(idx, data)
   local padding = string.rep(" ", self._padding)
   local res = {}
   -- replace nils
-  data = replace_nil(data, self._nil)
+  data = replace_nil(data, self._nil, width)
   -- if outside border
   if self:side_borders() then
     res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_style].vertical))
@@ -447,10 +441,10 @@ function Table:render()
     res[#res + 1] = self:render_top()
   end
   res[#res + 1] = self:render_row(0, self._headers)
-  if self._header_separator then
-    res[#res + 1] = self:render_row_separator()
-  end
   local row_sep = self:render_row_separator()
+  if self._header_separator then
+    res[#res + 1] = row_sep
+  end
   for idx, row in ipairs(self._data) do
     if self._row_separator(idx) and idx ~= 1 then
       res[#res + 1] = row_sep

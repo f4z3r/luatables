@@ -27,6 +27,24 @@ end
 local tbl = tables.Table
   :new()
   :headers(unpack(headers))
+  :header_separator(false)
   :rows(unpack(data))
 
+print(tbl:render())
+
+local headers = { "Item", "Count", "Price", "Currency" }
+local data = {
+  { "apple", 15, 7.5, "CHF" },
+  { "orange", 3, 5, "CHF" },
+  { "computer", 1, 1200, "USD" },
+  { "total", 19 },
+}
+
+print()
+
+local tbl = tables.Table
+  :new()
+  :headers(unpack(headers))
+  :header_separator(false)
+  :rows(unpack(data))
 print(tbl:render())
