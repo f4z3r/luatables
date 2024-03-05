@@ -6,6 +6,7 @@ Library to render tables nicely to the terminal.
 
 - [ ] testing
 - [ ] cleanup on render functions
+- [ ] validate compatibility
 - [ ] docs
 - [ ] borders only sides/only top
 - [ ] convenience functions e.g. alternating row colours

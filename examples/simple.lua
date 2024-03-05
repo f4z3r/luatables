@@ -15,29 +15,18 @@ local data = {
 
 local function format_cells(i, j, cell)
   if i % 2 == 0 then
-    return cell:fg(160):blink()
+    return cell:fg(160)
   end
   return cell
 end
 
 local function format_seps(sep)
-  return sep:fg(16)
+  return sep:fg(160)
 end
 
 local tbl = tables.Table
   :new()
-  :border_type(tables.BorderType.Double)
-  :border(true)
-  :column_separator(function(idx)
-    return idx==3
-  end)
-  :row_separator(function(idx)
-    return idx==4
-  end)
   :headers(unpack(headers))
-  :format_cells(format_cells)
-  :format_separators(format_seps)
-  :null("n/a")
   :rows(unpack(data))
 
 print(tbl:render())

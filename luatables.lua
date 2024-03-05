@@ -78,12 +78,21 @@ local BORDERS = {
   },
 }
 
----@enum BorderType
-local BorderType = {
-  None = "none",
+---@enum BorderStyle
+local BorderStyle = {
   Single = "single",
   Double = "double",
   Fat = "fat",
+}
+
+luatables.BorderStyle = BorderStyle
+
+---@enum BorderType
+local BorderType = {
+  None = 0,
+  TopBottom = 1,
+  Sides = 2,
+  All = 3,
 }
 
 luatables.BorderType = BorderType
@@ -155,16 +164,16 @@ local function replace_nil(data, repl)
   return res
 end
 
----@alias FormatCallback fun(idx: number): boolean
+---@alias FilterCallback fun(idx: number): boolean
 
 ---@class Table
 ---@field private _headers table?
 ---@field private _data table[]
 ---@field private _nil string
+---@field private _border_style BorderStyle
 ---@field private _border_type BorderType
----@field private _border boolean
----@field private _row_separator FormatCallback
----@field private _column_separator FormatCallback
+---@field private _row_separator FilterCallback
+---@field private _column_separator FilterCallback
 ---@field private _header_separator boolean
 ---@field private _padding number
 ---@field private _justify Justify
@@ -180,8 +189,8 @@ function Table:new()
     _data = {},
     _headers = nil,
     _nil = "",
-    _border_type = BorderType.Single,
-    _border = true,
+    _border_style = BorderStyle.Single,
+    _border_type = BorderType.None,
     _row_separator = always_false,
     _column_separator = always_true,
     _header_separator = true,
@@ -231,51 +240,43 @@ function Table:null(str)
 end
 
 ---set the border type of this table
----@param type BorderType
+---@param type BorderStyle
 ---@return Table
 function Table:border_type(type)
-  self._border_type = type
+  self._border_style = type
   return self
 end
 
 ---enable borders
----@param enabled boolean?
+---@param typ BorderType?
 ---@return Table
-function Table:border(enabled)
-  if enabled == nil then
-    enabled = true
-  end
-  self._border = enabled
+function Table:border(typ)
+  typ = typ or BorderType.All
+  self._border_type = typ
   return self
 end
 
 ---enable row separators
----@param enabled FormatCallback|boolean?
+---@param enabled FilterCallback|boolean?
 ---@return Table
 function Table:row_separator(enabled)
-  if enabled == nil then
+  if enabled == nil or (type(enabled) == "boolean" and enabled) then
     enabled = always_true
-  end
-  if type(enabled) ~= "function" then
-    enabled = function()
-      return enabled
-    end
+  elseif not enabled then
+    enabled = always_false
   end
   self._row_separator = enabled
   return self
 end
 
 ---enable column separators
----@param enabled FormatCallback|boolean?
+---@param enabled FilterCallback|boolean?
 ---@return Table
 function Table:column_separator(enabled)
-  if enabled == nil then
+  if enabled == nil or (type(enabled) == "boolean" and enabled) then
     enabled = always_true
-  end
-  if type(enabled) ~= "function" then
-    enabled = function()
-      return enabled
-    end
+  elseif not enabled then
+    enabled = always_false
   end
   self._column_separator = enabled
   return self
@@ -340,6 +341,16 @@ function Table:column_widths()
 end
 
 ---@private
+function Table:side_borders()
+  return self._border_type == BorderType.All or self._border_type == BorderType.Sides
+end
+
+---@private
+function Table:top_borders()
+  return self._border_type == BorderType.All or self._border_type == BorderType.TopBottom
+end
+
+---@private
 function Table:row_length()
   local max = #self._headers
   for _, row in ipairs(self._data) do
@@ -357,16 +368,16 @@ function Table:render_row(idx, data)
   -- replace nils
   data = replace_nil(data, self._nil)
   -- if outside border
-  if self._border and self._border_type ~= BorderType.None then
-    res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_type].vertical))
+  if self:side_borders() then
+    res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_style].vertical))
   end
   -- data
   for j = 1, width do
     -- apply separator
     if j ~= 1 then
       local separator = " "
-      if self._column_separator(j) and self._border_type ~= BorderType.None then
-        separator = BORDERS[self._border_type].vertical
+      if self._column_separator(j) and self._border_style ~= BorderStyle.None then
+        separator = BORDERS[self._border_style].vertical
       end
       res[#res + 1] = self._format_seps(Text:new(separator))
     end
@@ -377,8 +388,8 @@ function Table:render_row(idx, data)
     res[#res + 1] = self._format_cells(idx, j, val)
   end
   -- if outside border
-  if self._border and self._border_type ~= BorderType.None then
-    res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_type].vertical))
+  if self:side_borders() then
+    res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_style].vertical))
   end
   -- apply row formatting
   local str = Text:new():append(table.unpack(res))
@@ -388,10 +399,10 @@ end
 
 ---@private
 function Table:render_separator(type)
-  if self._border_type == BorderType.None then
+  if self._border_style == BorderStyle.None then
     return nil
   end
-  local borders = BORDERS[self._border_type]
+  local borders = BORDERS[self._border_style]
   local separators = borders[type]
   local padding = string.rep(borders.horizontal, self._padding)
   local widths = self:column_widths()
@@ -399,15 +410,17 @@ function Table:render_separator(type)
   for idx, width in ipairs(widths) do
     if idx ~= 1 then
       local separator = borders.horizontal
-      if self._column_separator(idx) and self._border_type ~= BorderType.None then
+      if self._column_separator(idx) then
         separator = separators.center
       end
       res = res .. separator .. padding
     end
     res = res .. string.rep(borders.horizontal, width) .. padding
   end
-  if self._border then
+  if self:side_borders() then
     res = separators.left .. padding .. res .. separators.right
+  else
+    res = padding .. res
   end
   return self._format_seps(Text:new(res)):render()
 end
@@ -430,7 +443,7 @@ end
 function Table:render()
   -- work with copy of data to avoid modifying original data
   local res = {}
-  if self._border then
+  if self:top_borders() then
     res[#res + 1] = self:render_top()
   end
   res[#res + 1] = self:render_row(0, self._headers)
@@ -444,7 +457,7 @@ function Table:render()
     end
     res[#res + 1] = self:render_row(idx, row)
   end
-  if self._border then
+  if self:top_borders() then
     res[#res + 1] = self:render_bottom()
   end
   return table.concat(res, "\n")
