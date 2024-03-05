@@ -14,37 +14,31 @@ local data = {
   { "total",   17, "CHF 36" },
 }
 
-local function format_cells(i, j, cell)
-  if string.find(cell._data, "n/a") then
-    return cell:dim()
-  end
-  if i == 4 then
-    cell:bold():fg(58)
-  end
-  return cell
-end
-
 local function format_rows(i, _, row)
   if i == 0 then
-    return row:fg(tables.Color.Red)
+    return row:bg(232)
+  elseif i % 2 == 0 then
+    return row:bg(235)
+  else
+    return row:bg(237)
   end
-  return row
 end
 
-local function format_seps(sep)
-  return sep:fg(tables.Color.Cyan)
+local function format_cells(i, j, cell)
+  if i == 4 then
+    return cell:fg(246)
+  end
+  return cell:fg(tables.Color.White)
 end
 
 local tbl = tables.Table
     :new()
     :headers(unpack(headers))
-    :border()
-    :null("n/a")
+    :null("")
     :format_rows(format_rows)
-    :format_separators(format_seps)
     :format_cells(format_cells)
     :border_style(tables.BorderStyle.Double)
-    :header_separator()
+    :header_separator(false)
     :rows(unpack(data))
 
 print(tbl:render())

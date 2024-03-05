@@ -2,15 +2,25 @@ local table = require("table")
 local text = require("luatext")
 local utf8 = require("lua-utf8")
 
+-- compatibility
+if not table.unpack and unpack then
+  table.unpack = unpack
+end
+
 ---@class Text
 ---@see https://github.com/f4z3r/luatext/blob/v1.0.0/docs/reference.md#text
 local Text = text.Text
 
 local luatables = {}
 
--- compatibility
-if not table.unpack and unpack then
-  table.unpack = unpack
+-- re-exports
+---@enum Color
+luatables.Color = text.Color
+---@class Text
+luatables.Text = text.Text
+
+local function bool_to_int(val)
+  return val and 1 or 0
 end
 
 local BORDERS = {
@@ -158,6 +168,8 @@ end
 
 ---@alias FilterCallback fun(idx: number): boolean
 
+---@alias RowType "data" | "separator"
+
 ---@class Table
 ---@field private _headers table?
 ---@field private _data table[]
@@ -169,7 +181,7 @@ end
 ---@field private _header_separator boolean
 ---@field private _padding number
 ---@field private _justify Justify
----@field private _format_rows fun(idx: number, row: Text): Text
+---@field private _format_rows fun(idx: number, type: RowType, row: Text): Text
 ---@field private _format_cells fun(i: number, j: number, content: Text): Text
 ---@field private _format_seps fun(separator: Text): Text
 local Table = {}
@@ -234,17 +246,17 @@ end
 ---set the border type of this table
 ---@param type BorderStyle
 ---@return Table
-function Table:border_type(type)
+function Table:border_style(type)
   self._border_style = type
   return self
 end
 
 ---enable borders
----@param typ BorderType?
+---@param type BorderType?
 ---@return Table
-function Table:border(typ)
-  typ = typ or BorderType.All
-  self._border_type = typ
+function Table:border(type)
+  type = type or BorderType.All
+  self._border_type = type
   return self
 end
 
@@ -387,12 +399,12 @@ function Table:render_row(idx, data)
   end
   -- apply row formatting
   local str = Text:new():append(table.unpack(res))
-  str = self._format_rows(idx, str)
+  str = self._format_rows(idx, "data", str)
   return str:render()
 end
 
 ---@private
-function Table:render_separator(type)
+function Table:render_separator(idx, type)
   if self._border_style == BorderStyle.None then
     return nil
   end
@@ -401,10 +413,10 @@ function Table:render_separator(type)
   local padding = string.rep(borders.horizontal, self._padding)
   local widths = self:column_widths()
   local res = ""
-  for idx, width in ipairs(widths) do
-    if idx ~= 1 then
+  for i, width in ipairs(widths) do
+    if i ~= 1 then
       local separator = borders.horizontal
-      if self._column_separator(idx) then
+      if self._column_separator(i) then
         separator = separators.center
       end
       res = res .. separator .. padding
@@ -416,22 +428,22 @@ function Table:render_separator(type)
   else
     res = padding .. res
   end
-  return self._format_seps(Text:new(res)):render()
+  return self._format_seps(self._format_rows(idx, "separator", Text:new(res))):render()
 end
 
 ---@private
-function Table:render_bottom()
-  return self:render_separator("bottom")
+function Table:render_bottom(idx)
+  return self:render_separator(idx, "bottom")
 end
 
 ---@private
 function Table:render_top()
-  return self:render_separator("top")
+  return self:render_separator(-2, "top")
 end
 
 ---@private
-function Table:render_row_separator()
-  return self:render_separator("inner")
+function Table:render_row_separator(idx)
+  return self:render_separator(idx, "inner")
 end
 
 function Table:render()
@@ -441,18 +453,17 @@ function Table:render()
     res[#res + 1] = self:render_top()
   end
   res[#res + 1] = self:render_row(0, self._headers)
-  local row_sep = self:render_row_separator()
   if self._header_separator then
-    res[#res + 1] = row_sep
+    res[#res + 1] = self:render_row_separator(0)
   end
   for idx, row in ipairs(self._data) do
     if self._row_separator(idx) and idx ~= 1 then
-      res[#res + 1] = row_sep
+      res[#res + 1] = self:render_row_separator(idx)
     end
     res[#res + 1] = self:render_row(idx, row)
   end
   if self:top_borders() then
-    res[#res + 1] = self:render_bottom()
+    res[#res + 1] = self:render_bottom(#self._data + 1)
   end
   return table.concat(res, "\n")
 end
