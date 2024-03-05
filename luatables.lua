@@ -133,6 +133,10 @@ local function always_false()
   return false
 end
 
+local function left_justify()
+  return Justify.Left
+end
+
 local function no_format_row(_, _, row)
   return row
 end
@@ -163,7 +167,7 @@ local function replace_nil(data, repl, fill)
 end
 
 ---@alias FilterCallback fun(idx: number): boolean
-
+---@alias JustifyCallback fun(idx: number): Justify
 ---@alias RowType "data" | "separator"
 
 ---@class Table
@@ -176,7 +180,7 @@ end
 ---@field private _column_separator FilterCallback
 ---@field private _header_separator boolean
 ---@field private _padding number
----@field private _justify Justify
+---@field private _justify Justify[]|JustifyCallback
 ---@field private _format_rows fun(idx: number, type: RowType, row: Text): Text
 ---@field private _format_cells fun(i: number, j: number, content: Text): Text
 ---@field private _format_seps fun(separator: Text): Text
@@ -195,7 +199,7 @@ function Table:new()
     _column_separator = always_true,
     _header_separator = true,
     _padding = 1,
-    _justify = Justify.Left,
+    _justify = left_justify,
     _format_rows = no_format_row,
     _format_cells = no_format_cell,
     _format_seps = no_format_seps,
@@ -281,6 +285,28 @@ function Table:column_separator(enabled)
   end
   ---@cast enabled FilterCallback
   self._column_separator = enabled
+  return self
+end
+
+---justify columns
+---@param justify Justify[]|JustifyCallback
+---@return Table
+function Table:justify(justify)
+  if type(justify) ~= "function" then
+    local copy = justify
+    justify = function(idx)
+      return copy[idx]
+    end
+  end
+  self._justify = justify
+  return self
+end
+
+---update padding
+---@param padding number
+---@return Table
+function Table:padding(padding)
+  self._padding = padding
   return self
 end
 
@@ -387,7 +413,7 @@ function Table:render_row(idx, data)
       res[#res + 1] = self._format_seps(Text:new(separator))
     end
     -- apply padding
-    local fmt = string.format("%%s%%%s%ds%%s", self._justify, widths[j])
+    local fmt = string.format("%%s%%%s%ds%%s", self._justify(j), widths[j])
     local val = Text:new(format(fmt, padding, tostring(data[j]), padding))
     -- apply formatting for cell
     res[#res + 1] = self._format_cells(idx, j, val)

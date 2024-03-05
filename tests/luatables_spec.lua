@@ -239,6 +239,62 @@ context("Tables:", function()
       )
       assert.are.equal(expected, trim_trailing_ws(out))
     end)
+
+    it("should support justifying columns via functions", function()
+      local fun = function(idx)
+        if idx == 3 then
+          return tables.Justify.Right
+        else
+          return tables.Justify.Left
+        end
+      end
+      local out = tbl:justify(fun):render()
+      local expected = trim_indent(
+        [[
+         Item     │ Count │ Price │ Currency
+        ──────────┼───────┼───────┼──────────
+         apple    │ 15    │   7.5 │ CHF
+         orange   │ 3     │     5 │ CHF
+         computer │ 1     │  1200 │ USD
+         total    │ 19    │       │
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support justifying columns via lists", function()
+      local justify = { tables.Justify.Left, tables.Justify.Left, tables.Justify.Right, tables.Justify.Left }
+      local out = tbl:justify(justify):render()
+      local expected = trim_indent(
+        [[
+         Item     │ Count │ Price │ Currency
+        ──────────┼───────┼───────┼──────────
+         apple    │ 15    │   7.5 │ CHF
+         orange   │ 3     │     5 │ CHF
+         computer │ 1     │  1200 │ USD
+         total    │ 19    │       │
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support setting a padding", function()
+      local out = tbl:padding(3):render()
+      local expected = trim_indent(
+        [[
+            Item       │   Count   │   Price   │   Currency
+         ──────────────┼───────────┼───────────┼──────────────
+            apple      │   15      │   7.5     │   CHF
+            orange     │   3       │   5       │   CHF
+            computer   │   1       │   1200    │   USD
+            total      │   19      │           │
+        ]],
+        3
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
   end)
 
   describe("when changing borders of tables, they", function()
@@ -475,6 +531,76 @@ context("Tables:", function()
          total      19            │
         ]],
         1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+  end)
+
+  describe("when rendering styled tables, they", function()
+    it("should support double borders", function()
+      local out = tbl:border_style(tables.BorderStyle.Double):render()
+      local expected = trim_indent(
+        [[
+         Item     ║ Count ║ Price ║ Currency
+        ══════════╬═══════╬═══════╬══════════
+         apple    ║ 15    ║ 7.5   ║ CHF
+         orange   ║ 3     ║ 5     ║ CHF
+         computer ║ 1     ║ 1200  ║ USD
+         total    ║ 19    ║       ║
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support double borders with full borders", function()
+      local out = tbl:border_style(tables.BorderStyle.Double):border():render()
+      local expected = trim_indent(
+        [[
+        ╔══════════╦═══════╦═══════╦══════════╗
+        ║ Item     ║ Count ║ Price ║ Currency ║
+        ╠══════════╬═══════╬═══════╬══════════╣
+        ║ apple    ║ 15    ║ 7.5   ║ CHF      ║
+        ║ orange   ║ 3     ║ 5     ║ CHF      ║
+        ║ computer ║ 1     ║ 1200  ║ USD      ║
+        ║ total    ║ 19    ║       ║          ║
+        ╚══════════╩═══════╩═══════╩══════════╝
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support fat borders", function()
+      local out = tbl:border_style(tables.BorderStyle.Fat):render()
+      local expected = trim_indent(
+        [[
+         Item     ┃ Count ┃ Price ┃ Currency
+        ━━━━━━━━━━╋━━━━━━━╋━━━━━━━╋━━━━━━━━━━
+         apple    ┃ 15    ┃ 7.5   ┃ CHF
+         orange   ┃ 3     ┃ 5     ┃ CHF
+         computer ┃ 1     ┃ 1200  ┃ USD
+         total    ┃ 19    ┃       ┃
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support fat borders with full borders", function()
+      local out = tbl:border_style(tables.BorderStyle.Fat):border():render()
+      local expected = trim_indent(
+        [[
+        ┏━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
+        ┃ Item     ┃ Count ┃ Price ┃ Currency ┃
+        ┣━━━━━━━━━━╋━━━━━━━╋━━━━━━━╋━━━━━━━━━━┫
+        ┃ apple    ┃ 15    ┃ 7.5   ┃ CHF      ┃
+        ┃ orange   ┃ 3     ┃ 5     ┃ CHF      ┃
+        ┃ computer ┃ 1     ┃ 1200  ┃ USD      ┃
+        ┃ total    ┃ 19    ┃       ┃          ┃
+        ┗━━━━━━━━━━┻━━━━━━━┻━━━━━━━┻━━━━━━━━━━┛
+        ]],
+        0
       )
       assert.are.equal(expected, trim_trailing_ws(out))
     end)
