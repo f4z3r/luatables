@@ -153,7 +153,7 @@ local function replace_nil(data, repl, fill)
   local res = {}
   for idx = 1, fill do
     local val = data[idx]
-    if val == Nil or val == nil then
+    if val == nil then
       res[#res + 1] = repl
     else
       res[#res + 1] = val
@@ -321,10 +321,13 @@ end
 
 ---@private
 function Table:column_width(idx)
-  local max = utf8.len(self._headers[idx] or "")
+  local max = 0
+  if self._headers then
+    max = utf8.len(self._headers[idx] or "")
+  end
   for _, row in ipairs(self._data) do
     local data = row[idx]
-    if data == Nil then
+    if data == nil then
       data = self._nil
     end
     max = math.max(max, utf8.len(tostring(data) or ""))
@@ -354,9 +357,9 @@ end
 
 ---@private
 function Table:row_length()
-  local max = #self._headers
+  local max = table.maxn(self._headers or {})
   for _, row in ipairs(self._data) do
-    max = math.max(max, #row)
+    max = math.max(max, table.maxn(row))
   end
   return max
 end
@@ -448,9 +451,11 @@ function Table:render()
   if self:top_borders() then
     res[#res + 1] = self:render_top()
   end
-  res[#res + 1] = self:render_row(0, self._headers)
-  if self._header_separator then
-    res[#res + 1] = self:render_row_separator(0)
+  if self._headers then
+    res[#res + 1] = self:render_row(0, self._headers)
+    if self._header_separator then
+      res[#res + 1] = self:render_row_separator(0)
+    end
   end
   for idx, row in ipairs(self._data) do
     if self._row_separator(idx) and idx ~= 1 then

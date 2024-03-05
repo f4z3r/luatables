@@ -66,6 +66,110 @@ context("Tables:", function()
     tbl = tables.Table:new():headers(table.unpack(headers)):rows(table.unpack(data))
   end)
 
+  describe("when rendering sparse tables, they", function()
+    local _headers = { "A", nil, nil, nil, "E" }
+    local _data = {
+      { nil, nil, "c", "d" },
+      { nil, "b", nil, nil, "e" },
+      { "a", nil, nil, nil, nil, "f" },
+      {},
+    }
+    local sparse_tbl
+    before_each(function()
+      sparse_tbl = tables.Table:new():headers(table.unpack(_headers)):rows(table.unpack(_data))
+    end)
+
+    it("should support correct rendering", function()
+      local out = sparse_tbl:render()
+      local expected = trim_indent(
+        [[
+         A │   │   │   │ E │
+        ───┼───┼───┼───┼───┼───
+           │   │ c │ d │   │
+           │ b │   │   │ e │
+         a │   │   │   │   │ f
+           │   │   │   │   │
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+  end)
+
+  describe("when rendering tables with no headers, they", function()
+    local _data = {
+      { nil, nil, "c", "d" },
+      { nil, "b", nil, nil, "e" },
+      { "a", nil, nil, nil, nil, "f" },
+      {},
+    }
+    local sparse_tbl
+    before_each(function()
+      sparse_tbl = tables.Table:new():rows(table.unpack(_data))
+    end)
+
+    it("should support correct rendering", function()
+      local out = sparse_tbl:render()
+      local expected = trim_indent(
+        [[
+           │   │ c │ d │   │
+           │ b │   │   │ e │
+         a │   │   │   │   │ f
+           │   │   │   │   │
+        ]],
+        3
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support correct rendering with borders", function()
+      local out = sparse_tbl:border():render()
+      local expected = trim_indent(
+        [[
+        ┌───┬───┬───┬───┬───┬───┐
+        │   │   │ c │ d │   │   │
+        │   │ b │   │   │ e │   │
+        │ a │   │   │   │   │ f │
+        │   │   │   │   │   │   │
+        └───┴───┴───┴───┴───┴───┘
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+  end)
+
+  describe("when rendering tables with no data, they", function()
+    local _headers = { "A", nil, nil, nil, "E" }
+    local sparse_tbl
+    before_each(function()
+      sparse_tbl = tables.Table:new():headers(table.unpack(_headers))
+    end)
+
+    it("should support correct rendering", function()
+      local out = sparse_tbl:render()
+      local expected = trim_indent(
+        [[
+         A │  │  │  │ E
+        ───┼──┼──┼──┼───
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support correct rendering without header separator and column separator", function()
+      local out = sparse_tbl:header_separator(false):column_separator(false):render()
+      local expected = trim_indent(
+        [[
+         A            E
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+  end)
+
   describe("when rendering standard tables, they", function()
     it("should support formatting standard text correctly", function()
       local out = tbl:render()
@@ -203,6 +307,172 @@ context("Tables:", function()
          orange   │ 3     │ 5     │ CHF
          computer │ 1     │ 1200  │ USD
          total    │ 19    │       │
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support removing column separators", function()
+      tbl:column_separator(false)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item       Count   Price   Currency
+        ─────────────────────────────────────
+         apple      15      7.5     CHF
+         orange     3       5       CHF
+         computer   1       1200    USD
+         total      19
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support adding row separators", function()
+      tbl:row_separator()
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item     │ Count │ Price │ Currency
+        ──────────┼───────┼───────┼──────────
+         apple    │ 15    │ 7.5   │ CHF
+        ──────────┼───────┼───────┼──────────
+         orange   │ 3     │ 5     │ CHF
+        ──────────┼───────┼───────┼──────────
+         computer │ 1     │ 1200  │ USD
+        ──────────┼───────┼───────┼──────────
+         total    │ 19    │       │
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support adding row separator without column separators", function()
+      tbl:row_separator():column_separator(false)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item       Count   Price   Currency
+        ─────────────────────────────────────
+         apple      15      7.5     CHF
+        ─────────────────────────────────────
+         orange     3       5       CHF
+        ─────────────────────────────────────
+         computer   1       1200    USD
+        ─────────────────────────────────────
+         total      19
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support adding row separator without column separators and top borders", function()
+      tbl:row_separator():column_separator(false):border(tables.BorderType.TopBottom)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+        ─────────────────────────────────────
+         Item       Count   Price   Currency
+        ─────────────────────────────────────
+         apple      15      7.5     CHF
+        ─────────────────────────────────────
+         orange     3       5       CHF
+        ─────────────────────────────────────
+         computer   1       1200    USD
+        ─────────────────────────────────────
+         total      19
+        ─────────────────────────────────────
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support adding row separator without column separators and full borders", function()
+      tbl:row_separator():column_separator(false):border()
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+        ┌─────────────────────────────────────┐
+        │ Item       Count   Price   Currency │
+        ├─────────────────────────────────────┤
+        │ apple      15      7.5     CHF      │
+        ├─────────────────────────────────────┤
+        │ orange     3       5       CHF      │
+        ├─────────────────────────────────────┤
+        │ computer   1       1200    USD      │
+        ├─────────────────────────────────────┤
+        │ total      19                       │
+        └─────────────────────────────────────┘
+        ]],
+        0
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it(
+      "should support adding row separator without column separators and full borders, without header separators",
+      function()
+        tbl:row_separator():column_separator(false):header_separator(false):border()
+        local out = tbl:render()
+        local expected = trim_indent(
+          [[
+        ┌─────────────────────────────────────┐
+        │ Item       Count   Price   Currency │
+        │ apple      15      7.5     CHF      │
+        ├─────────────────────────────────────┤
+        │ orange     3       5       CHF      │
+        ├─────────────────────────────────────┤
+        │ computer   1       1200    USD      │
+        ├─────────────────────────────────────┤
+        │ total      19                       │
+        └─────────────────────────────────────┘
+        ]],
+          0
+        )
+        assert.are.equal(expected, trim_trailing_ws(out))
+      end
+    )
+
+    it("should support adding using custom row separators", function()
+      local fun = function(idx)
+        return idx == 4
+      end
+      tbl:row_separator(fun)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item     │ Count │ Price │ Currency
+        ──────────┼───────┼───────┼──────────
+         apple    │ 15    │ 7.5   │ CHF
+         orange   │ 3     │ 5     │ CHF
+         computer │ 1     │ 1200  │ USD
+        ──────────┼───────┼───────┼──────────
+         total    │ 19    │       │
+        ]],
+        1
+      )
+      assert.are.equal(expected, trim_trailing_ws(out))
+    end)
+
+    it("should support adding using custom column separators", function()
+      local fun = function(idx)
+        return idx == 4
+      end
+      tbl:column_separator(fun)
+      local out = tbl:render()
+      local expected = trim_indent(
+        [[
+         Item       Count   Price │ Currency
+        ──────────────────────────┼──────────
+         apple      15      7.5   │ CHF
+         orange     3       5     │ CHF
+         computer   1       1200  │ USD
+         total      19            │
         ]],
         1
       )
