@@ -127,6 +127,18 @@ local function always_false()
   return false
 end
 
+local function no_format_row(_, row)
+  return row
+end
+
+local function no_format_cell(_, _, cell)
+  return cell
+end
+
+local function no_format_seps(sep)
+  return sep
+end
+
 ---replace nil values in an array with a replacement
 ---@param data any[]
 ---@param repl any
@@ -156,6 +168,9 @@ end
 ---@field private _header_separator boolean
 ---@field private _padding number
 ---@field private _justify Justify
+---@field private _format_rows fun(idx: number, row: Text): Text
+---@field private _format_cells fun(i: number, j: number, content: Text): Text
+---@field private _format_seps fun(separator: Text): Text
 local Table = {}
 
 ---create a new table
@@ -172,6 +187,9 @@ function Table:new()
     _header_separator = true,
     _padding = 1,
     _justify = Justify.Left,
+    _format_rows = no_format_row,
+    _format_cells = no_format_cell,
+    _format_seps = no_format_seps,
   }
   setmetatable(o, self)
   self.__index = self
@@ -278,15 +296,7 @@ end
 ---@param fun fun(i: number, j: number, content: Text): Text
 ---@return Table
 function Table:format_cells(fun)
-  error("not implemented")
-  return self
-end
-
----format the header row
----@param fun fun(headers: Text): Text
----@return Table
-function Table:format_header(fun)
-  error("not implemented")
+  self._format_cells = fun
   return self
 end
 
@@ -294,7 +304,7 @@ end
 ---@param fun fun(idx: number, row: Text): Text
 ---@return Table
 function Table:format_rows(fun)
-  error("not implemented")
+  self._format_rows = fun
   return self
 end
 
@@ -302,7 +312,7 @@ end
 ---@param fun fun(separator: Text): Text
 ---@return Table
 function Table:format_separators(fun)
-  error("not implemented")
+  self._format_seps = fun
   return self
 end
 
@@ -339,44 +349,41 @@ function Table:row_length()
 end
 
 ---@private
-function Table:format_str()
-  local padding = string.rep(" ", self._padding)
+function Table:render_row(idx, data)
+  local width = self:row_length()
   local widths = self:column_widths()
-  local res = ""
-  for idx, width in ipairs(widths) do
-    if idx ~= 1 then
+  local padding = string.rep(" ", self._padding)
+  local res = {}
+  -- replace nils
+  data = replace_nil(data, self._nil)
+  -- if outside border
+  if self._border and self._border_type ~= BorderType.None then
+    res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_type].vertical))
+  end
+  -- data
+  for j = 1, width do
+    -- apply separator
+    if j ~= 1 then
       local separator = " "
-      if self._column_separator(idx) and self._border_type ~= BorderType.None then
+      if self._column_separator(j) and self._border_type ~= BorderType.None then
         separator = BORDERS[self._border_type].vertical
       end
-      res = res .. separator .. padding
+      res[#res + 1] = self._format_seps(Text:new(separator))
     end
-    res = res .. string.format("%%%s%ds", self._justify, width) .. padding
+    -- apply padding
+    local fmt = string.format("%%s%%%s%ds%%s", self._justify, widths[j])
+    local val = Text:new(format(fmt, padding, tostring(data[j]), padding))
+    -- apply formatting for cell
+    res[#res + 1] = self._format_cells(idx, j, val)
   end
-  local separator = " "
-  if self._border_type ~= BorderType.None then
-    separator = BORDERS[self._border_type].vertical
+  -- if outside border
+  if self._border and self._border_type ~= BorderType.None then
+    res[#res + 1] = self._format_seps(Text:new(BORDERS[self._border_type].vertical))
   end
-  if self._border then
-    res = separator .. padding .. res .. separator
-  end
-  return res
-end
-
----@private
-function Table:render_rows()
-  local fmt = self:format_str()
-  local rows = {}
-  for _, row in ipairs(self._data) do
-    rows[#rows + 1] = format(fmt, table.unpack(replace_nil(row, self._nil)))
-  end
-  return rows
-end
-
----@private
-function Table:render_header()
-  local fmt = self:format_str()
-  return format(fmt, table.unpack(self._headers))
+  -- apply row formatting
+  local str = Text:new():append(table.unpack(res))
+  str = self._format_rows(idx, str)
+  return str:render()
 end
 
 ---@private
@@ -402,7 +409,7 @@ function Table:render_separator(type)
   if self._border then
     res = separators.left .. padding .. res .. separators.right
   end
-  return res
+  return self._format_seps(Text:new(res)):render()
 end
 
 ---@private
@@ -426,17 +433,16 @@ function Table:render()
   if self._border then
     res[#res + 1] = self:render_top()
   end
-  res[#res + 1] = self:render_header()
+  res[#res + 1] = self:render_row(0, self._headers)
   if self._header_separator then
     res[#res + 1] = self:render_row_separator()
   end
-  local rows = self:render_rows()
   local row_sep = self:render_row_separator()
-  for idx, row in ipairs(rows) do
+  for idx, row in ipairs(self._data) do
     if self._row_separator(idx) and idx ~= 1 then
       res[#res + 1] = row_sep
     end
-    res[#res + 1] = row
+    res[#res + 1] = self:render_row(idx, row)
   end
   if self._border then
     res[#res + 1] = self:render_bottom()

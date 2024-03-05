@@ -13,9 +13,20 @@ local data = {
   { "total", 17, "CHF 36" },
 }
 
+local function format_cells(i, j, cell)
+  if i % 2 == 0 then
+    return cell:fg(160):blink()
+  end
+  return cell
+end
+
+local function format_seps(sep)
+  return sep:fg(16)
+end
+
 local tbl = tables.Table
   :new()
-  :border_type(tables.BorderType.Single)
+  :border_type(tables.BorderType.Double)
   :border(true)
   :column_separator(function(idx)
     return idx==3
@@ -24,6 +35,8 @@ local tbl = tables.Table
     return idx==4
   end)
   :headers(unpack(headers))
+  :format_cells(format_cells)
+  :format_separators(format_seps)
   :null("n/a")
   :rows(unpack(data))
 
