@@ -246,10 +246,10 @@ function Table:null(str)
 end
 
 ---set the border type of this table
----@param type BorderStyle
+---@param style BorderStyle
 ---@return Table
-function Table:border_style(type)
-  self._border_style = type
+function Table:border_style(style)
+  self._border_style = style
   return self
 end
 
@@ -257,7 +257,9 @@ end
 ---@param type BorderType?
 ---@return Table
 function Table:border(type)
-  type = type or BorderType.All
+  if type == nil then
+    type = BorderType.All
+  end
   self._border_type = type
   return self
 end

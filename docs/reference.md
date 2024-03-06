@@ -7,6 +7,13 @@
   - [Example](#example)
   - [Table](#table)
     - [Table:new](#tablenew)
+    - [Table:headers](#tableheaders)
+    - [Table:row](#tablerow)
+    - [Table:rows](#tablerows)
+    - [Table:null](#tablenull)
+    - [Table:border_style](#tableborderstyle)
+    - [Table:border](#tableborder)
+    - [Table:row_separator](#tablerowseparator)
   - [RowType](#rowtype)
   - [FilterCallback](#filtercallback)
   - [JustifyCallback](#justifycallback)
@@ -91,18 +98,179 @@ This generates the table as follows:
 
 ## Table
 
+<!-- TODO: add note on the table -->
+
 ### Table:new
 
 ```lua
-(method) Text:new(str?: string|Text)
-  -> Text
+(method) Table:new()
+  -> Table
 ```
 
-Create a new `Text` from a string.
+Create a new empty `Table`.
+
+[Back to the top](#top)
+
+### Table:headers
+
+```lua
+(method) Table:headers(...any)
+  -> Table
+```
+
+Add headers to the table. If called several times, the second call will overwrite the headers from
+the first call.
 
 Parameters:
-- `str` — The text to be displayed in this `Text`.
+- `...` — The header values. `tostring()` will be called on these values when rendered.
 
+[Back to the top](#top)
+
+### Table:row
+
+```lua
+(method) Table:row(...any)
+  -> Table
+```
+
+Append a row to the end of the table. The number of values does not need to match other rows.
+Missing values will be treated an `nil`. `nil` values between other values need to be explicitly
+passed to the method.
+
+Parameters:
+- `...` — The values of the row. `tostring()` will be called on these values when rendered.
+
+[Back to the top](#top)
+
+### Table:rows
+
+```lua
+(method) Table:rows(...any[])
+  -> Table
+```
+
+Append several rows to the end of the table. Rows are passed as tables. Behaves like `Table:row`
+called several times for each row passed as arguments.
+
+Parameters:
+- `...` — The rows, each passed as a table.
+
+[Back to the top](#top)
+
+### Table:null
+
+```lua
+(method) Table:null(str: string)
+  -> Table
+```
+
+Replace `nil` values when rendering the table by `str`.
+
+Parameters:
+- `str` — The value to replace `nil` cells in the `Table`.
+
+[Back to the top](#top)
+
+### Table:border_style
+
+```lua
+(method) Table:border_style(style: BorderStyle)
+  -> Table
+```
+
+Apply a style to the table separators.
+
+Parameters:
+- `style` — The style to apply.
+
+> See the [`BorderStyle`](#borderstyle) type.
+
+[Back to the top](#top)
+
+### Table:border
+
+```lua
+(method) Table:border(type?: BorderType)
+  -> Table
+```
+
+Apply a border to the `Table`.
+
+Parameters:
+- `type` — The type of border. If none is provided, `BorderType.All` is applied.
+
+> See the [`BorderType`](#bordertype) type.
+
+[Back to the top](#top)
+
+### Table:row_separator
+
+```lua
+(method) Table:row_separator(enabled?: FilterCallback|boolean)
+  -> Table
+```
+
+Apply row separators between data rows.
+
+Parameters:
+- `enabled` — If a boolean is provided, applies the separators between all rows. If a
+  `FilterCallback` is provided, a separator is applied **before** the row of the index provided to
+  the callback. Thus returning `true` on index 1 has no effect. Applying a separator before the
+  first row is done with the [`Table:header_separator()`](#tableheaderseparator) method.
+
+> See the [`FilterCallback`](#filtercallback) alias.
+
+#### Example
+
+The example below will only add a separator before the very last line in the table. This can for
+instance be useful when the last row is a summarizing row such as showcasing totals.
+
+```lua
+local data = {...}
+local function filter(idx)
+    return idx == #data
+end
+tbl:row_separator(filter)
+```
+
+[Back to the top](#top)
+
+### Table:column_separator
+
+```lua
+(method) Table:column_separator(enabled?: FilterCallback|boolean)
+  -> Table
+```
+
+Apply column separators between columns.
+
+Parameters:
+- `enabled` — Behaves the same as in [`Table:row_separator()`](#tablerowseparator).
+
+> See the [`FilterCallback`](#filtercallback) alias.
+
+> Note that applying column separators only to the data part of the `Table`, and not having
+> separators in the header (or vice versa), is currently not supported.
+
+[Back to the top](#top)
+
+### Table:justify
+
+```lua
+(method) Table:justify(justify: Justify[]|JustifyCallback)
+  -> Table
+```
+
+Apply justification to columns.
+
+Parameters:
+- `justify` — If a table is provided, the corresponding entry will be applied to each column. In
+  such a case the table **must** have the same length as the longest row in the `Table`. If a
+  function is passed, this will be called with the index of each column to get the justification.
+
+> See the [`JustifyCallback`](#justifycallback) alias.
+
+> See the [`Justify`](#justify) type.
 
 [Back to the top](#top)
 
