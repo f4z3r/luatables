@@ -46,13 +46,15 @@ Tables can be formatted using a variety of functions provided. The library allow
 - changing colors
 - ...
 
+The formatting is supported via [`luatext`](https://github.com/f4z3r/luatext).
+
 For instance, to print a table having alternating background colors, with the last row having dimmed
 foreground:
 
 ```lua
 local function format_rows(i, _, row)
   if i == 0 then           -- set the header background
-    return row:bg(232)
+    return row:bg(232)     -- uses LuaText formatting
   elseif i % 2 == 0 then   -- alternate row backgrounds for data
     return row:bg(235)
   else
