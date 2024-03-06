@@ -15,8 +15,10 @@ local luatables = {}
 
 -- re-exports
 ---@enum Color
+---@see https://github.com/f4z3r/luatext/blob/v1.1.0/docs/reference.md#color
 luatables.Color = text.Color
 ---@class Text
+---@see https://github.com/f4z3r/luatext/blob/v1.1.0/docs/reference.md#text
 luatables.Text = text.Text
 
 local BORDERS = {

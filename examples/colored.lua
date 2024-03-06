@@ -18,7 +18,7 @@ local function format_cells(i, _, cell)
   if string.find(cell:get_raw_text(), "n/a") then
     return cell:dim()
   end
-  if i == 4 then
+  if i == #data then
     cell:bold():fg(58)
   end
   return cell
