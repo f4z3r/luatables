@@ -8,7 +8,7 @@ if not table.unpack and unpack then
 end
 
 ---@class Text
----@see https://github.com/f4z3r/luatext/blob/v1.0.0/docs/reference.md#text
+---@see https://github.com/f4z3r/luatext/blob/v1.1.0/docs/reference.md#text
 local Text = text.Text
 
 local luatables = {}

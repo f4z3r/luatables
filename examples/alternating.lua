@@ -1,5 +1,4 @@
 local tables = require("luatables")
-local string = require("string")
 
 local headers = {
   "Item",

@@ -14,7 +14,7 @@ description = {
 dependencies = {
   "lua >= 5.1",
   "utf8 >= 1.2",
-  "luatext >= 1.0",
+  "luatext >= 1.1",
 }
 build = {
   type = "builtin",
