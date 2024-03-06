@@ -334,7 +334,7 @@ function Table:format_cells(fun)
 end
 
 ---format the data rows
----@param fun fun(idx: number, row: Text): Text
+---@param fun fun(idx: number, type: RowType, row: Text): Text
 ---@return Table
 function Table:format_rows(fun)
   self._format_rows = fun
@@ -467,7 +467,7 @@ end
 
 ---@private
 function Table:render_top()
-  return self:render_separator(-2, "top")
+  return self:render_separator(-1, "top")
 end
 
 ---@private
@@ -475,6 +475,8 @@ function Table:render_row_separator(idx)
   return self:render_separator(idx, "inner")
 end
 
+---render the Table
+---@return string
 function Table:render()
   -- work with copy of data to avoid modifying original data
   local res = {}

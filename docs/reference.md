@@ -11,9 +11,18 @@
     - [Table:row](#tablerow)
     - [Table:rows](#tablerows)
     - [Table:null](#tablenull)
-    - [Table:border_style](#tableborderstyle)
+    - [Table:border_style](#tableborder_style)
     - [Table:border](#tableborder)
-    - [Table:row_separator](#tablerowseparator)
+    - [Table:row_separator](#tablerow_separator)
+      - [Example](#example)
+    - [Table:column_separator](#tablecolumn_separator)
+    - [Table:header_separator](#tableheader_separator)
+    - [Table:justify](#tablejustify)
+    - [Table:padding](#tablepadding)
+    - [Table:format_cells](#tableformat_cells)
+    - [Table:format_rows](#tableformat_rows)
+    - [Table:format_separators](#tableformat_separators)
+    - [Table:render](#tablerender)
   - [RowType](#rowtype)
   - [FilterCallback](#filtercallback)
   - [JustifyCallback](#justifycallback)
@@ -216,7 +225,7 @@ Parameters:
 - `enabled` — If a boolean is provided, applies the separators between all rows. If a
   `FilterCallback` is provided, a separator is applied **before** the row of the index provided to
   the callback. Thus returning `true` on index 1 has no effect. Applying a separator before the
-  first row is done with the [`Table:header_separator()`](#tableheaderseparator) method.
+  first row is done with the [`Table:header_separator()`](#tableheader_separator) method.
 
 > See the [`FilterCallback`](#filtercallback) alias.
 
@@ -245,12 +254,26 @@ tbl:row_separator(filter)
 Apply column separators between columns.
 
 Parameters:
-- `enabled` — Behaves the same as in [`Table:row_separator()`](#tablerowseparator).
+- `enabled` — Behaves the same as in [`Table:row_separator()`](#tablerow_separator).
 
 > See the [`FilterCallback`](#filtercallback) alias.
 
 > Note that applying column separators only to the data part of the `Table`, and not having
 > separators in the header (or vice versa), is currently not supported.
+
+[Back to the top](#top)
+
+### Table:header_separator
+
+```lua
+(method) Table:header_separator(enabled?: boolean)
+  -> Table
+```
+
+Apply a separator between headers and data rows.
+
+Parameters:
+- `enabled` — Enable the header separator. If nothing is provided, `true` is assumed.
 
 [Back to the top](#top)
 
@@ -271,6 +294,104 @@ Parameters:
 > See the [`JustifyCallback`](#justifycallback) alias.
 
 > See the [`Justify`](#justify) type.
+
+[Back to the top](#top)
+
+### Table:padding
+
+```lua
+(method) Table:padding(padding: number)
+  -> Table
+```
+
+Apply justification to columns.
+
+Parameters:
+- `padding` — The number of spaces to pad each cell. In other words, the number of spaces between
+  the content of the cell and the separators.
+
+[Back to the top](#top)
+
+### Table:format_cells
+
+```lua
+(method) Table:format_cells(fun: fun(i: number, j: number, content: Text): Text)
+  -> Table
+```
+
+Apply formatting to cells. This formatting takes precedence over all other formatting settings.
+
+Parameters:
+- `fun` — A function taking the row and column indexes of the cell, and its content as a
+  [`luatext.Text`](https://github.com/f4z3r/luatext/blob/main/docs/reference.md#text). Formatting
+  can directly be applied to `content`. Modifying the data contained within `content` (i.e. changing
+  the actual text) will break rendering. `content` contains the entire cell contents, including
+  potential padding. This function is also called for the header, in which case `i` is 0.
+
+[Back to the top](#top)
+
+### Table:format_rows
+
+```lua
+(method) Table:format_rows(fun: fun(idx: number, type: RowType, row: Text): Text)
+  -> Table
+```
+
+Apply formatting to an entire row. Formatting cells and separators take precedence over the
+formatting provided in this method.
+
+Parameters:
+- `fun` — A function taking the row index, the row type, and the actual row content as a
+  [`luatext.Text`](https://github.com/f4z3r/luatext/blob/main/docs/reference.md#text). Formatting
+  can directly be applied to `row`. Modifying the data contained within `row` (i.e. changing
+  the actual text) will break rendering.
+
+> For following tables, the function will be called with the index and type described next to it:
+>
+> ```
+>                                            Index   Type
+> ┌─────────────────────────────────────┐    -1      "separator"
+> │ Item       Count   Price   Currency │    0       "data"
+> ├─────────────────────────────────────┤    0       "separator"
+> │ apple      15      7.5     CHF      │    1       "data"
+> ├─────────────────────────────────────┤    1       "separator"
+> │ orange     3       5       CHF      │    2       "data"
+> ├─────────────────────────────────────┤    2       "separator"
+> │ computer   1       1200    USD      │    3       "data"
+> ├─────────────────────────────────────┤    3       "separator"
+> │ total      19                       │    4       "data"
+> └─────────────────────────────────────┘    4       "separator"
+> ```
+
+> See the [`Rowtype`](#rowtype) enum.
+
+[Back to the top](#top)
+
+### Table:format_separators
+
+```lua
+(method) Table:format_separators(fun: fun(separator: Text): Text)
+  -> Table
+```
+
+Apply formatting to separators. This takes precedence over row formatting.
+
+Parameters:
+- `fun` — A function taking the separator or sequence of separators as a
+  [`luatext.Text`](https://github.com/f4z3r/luatext/blob/main/docs/reference.md#text). Formatting
+  can directly be applied to `separator`. Modifying the data contained within `separator` (i.e.
+  changing the actual text) will break rendering.
+
+[Back to the top](#top)
+
+### Table:render
+
+```lua
+(method) Table:render()
+  -> string
+```
+
+Render the table as a string.
 
 [Back to the top](#top)
 

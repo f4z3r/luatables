@@ -92,14 +92,22 @@ The entire API is documented in [the reference document](/docs/reference.md).
 
 ## Installation
 
+This module is hosted on LuaRocks, and can be installed using:
+
+```bash
+luarocks install luatables
+```
+
 ## Development
 
-## Roadmap
+### Roadmap
 
-- [ ] docs
-- [ ] cleanup on render functions
-- [ ] validate compatibility with Lua 5.3+
-- [ ] independent justification for headers
-- [ ] centered justification
-- [ ] text width limitation columns
-- [ ] text wrapping into multiline cells
+This is a roadmap of functionality and technical aspects I want to add or improve. I will get to it
+when I get to it. Feel free to contribute if you want and have some time.
+
+1. Improve compatibility with Lua 5.1+
+2. Cleanup on render functions.
+3. Allow to center text (centered justification).
+4. Allow headers to be independently justified.
+5. Support for column width limitation (text trimming).
+6. Support for multiline cells.
