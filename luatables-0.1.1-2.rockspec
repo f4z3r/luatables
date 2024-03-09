@@ -1,6 +1,6 @@
 rockspec_format = "3.0"
 package = "LuaTables"
-version = "0.1.1-1"
+version = "0.1.1-2"
 source = {
   url = "git://github.com/f4z3r/luatables.git",
   tag = "v0.1.1",
@@ -18,7 +18,7 @@ description = {
 dependencies = {
   "lua == 5.1",
   "utf8 >= 0.1",
-  "luatext >= 1.1",
+  "luatext >= 1.0",
 }
 test_dependencies = {
   "busted >= 2.2",
