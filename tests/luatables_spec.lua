@@ -1,3 +1,5 @@
+--# selene: allow(undefined_variable, incorrect_standard_library_use)
+
 local table = require("table")
 
 -- compatibility

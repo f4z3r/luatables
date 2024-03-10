@@ -1,6 +1,6 @@
 local table = require("table")
 local text = require("luatext")
-local utf8 = require("lua-utf8")
+local utf8 = require("utf8")
 
 -- compatibility
 if not table.unpack and unpack then

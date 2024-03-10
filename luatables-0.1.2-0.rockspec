@@ -1,9 +1,12 @@
+local package_version = "0.1.2"
+local rockspec_revision = "0"
+
 rockspec_format = "3.0"
 package = "LuaTables"
-version = "0.1.1-2"
+version = package_version .. "-" .. rockspec_revision
 source = {
   url = "git://github.com/f4z3r/luatables.git",
-  tag = "v0.1.1",
+  tag = "v" .. package_version,
 }
 description = {
   summary = "Library to render tables nicely to the terminal.",

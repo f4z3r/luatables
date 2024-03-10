@@ -1,4 +1,4 @@
-# luatables
+# ![LuaTables](./assets/logo.png)
 
 ![GitHub License](https://img.shields.io/github/license/f4z3r/luatables?link=https%3A%2F%2Fgithub.com%2Ff4z3r%2Fluatables%2Fblob%2Fmain%2FLICENSE)
 ![GitHub Release](https://img.shields.io/github/v/release/f4z3r/luatables?logo=github&link=https%3A%2F%2Fgithub.com%2Ff4z3r%2Fluatables%2Freleases)
