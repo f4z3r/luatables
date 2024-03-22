@@ -1,4 +1,4 @@
-local package_version = "0.1.2"
+local package_version = "0.1.3"
 local rockspec_revision = "0"
 
 rockspec_format = "3.0"
@@ -29,6 +29,6 @@ test_dependencies = {
 build = {
   type = "builtin",
   modules = {
-    luatext = "./luatables.lua",
+    luatables = "./luatables.lua",
   },
 }
