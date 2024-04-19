@@ -104,6 +104,15 @@ luarocks install luatables
 
 ## Development
 
+You can setup a dev environment with the needed Lua version:
+
+```bash
+# launch shell with some lua version and the dependencies installed:
+nix develop .#lua52
+```
+
+and then test with `busted`.
+
 ### Roadmap
 
 This is a roadmap of functionality and technical aspects I want to add or improve. I will get to it

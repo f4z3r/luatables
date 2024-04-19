@@ -7,6 +7,17 @@ if not table.unpack and unpack then
   table.unpack = unpack
 end
 
+if not table.maxn then
+  local math = require("math")
+  table.maxn = function(tbl)
+    local maxIndex = 0
+    for k, _ in pairs(tbl) do
+      maxIndex = math.max(maxIndex, k)
+    end
+    return maxIndex
+  end
+end
+
 ---@class Text
 ---@see https://github.com/f4z3r/luatext/blob/v1.1.0/docs/reference.md#text
 local Text = text.Text

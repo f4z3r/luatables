@@ -19,12 +19,15 @@ description = {
   license = "MIT",
 }
 dependencies = {
-  "lua == 5.1",
+  "lua >= 5.1, < 5.4",
   "utf8 >= 0.1",
   "luatext >= 1.0",
 }
 test_dependencies = {
   "busted >= 2.2",
+}
+test = {
+  type = "busted",
 }
 build = {
   type = "builtin",
