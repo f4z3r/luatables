@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## Version `0.2.0`
 
 Features:
 - Add support for Lua versions 5.2 and 5.3.
